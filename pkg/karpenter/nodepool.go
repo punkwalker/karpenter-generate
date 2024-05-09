@@ -57,7 +57,7 @@ func (n NodeGroup) NodePoolSpec() sigkarpenter.NodePoolSpec {
 			ConsolidationPolicy: sigkarpenter.ConsolidationPolicyWhenEmpty,
 		},
 		Limits: sigkarpenter.Limits{
-			corev1.ResourceName(corev1.ResourceCPU): resource.MustParse("1000"),
+			corev1.ResourceCPU: resource.MustParse("1000"),
 		},
 	}
 }

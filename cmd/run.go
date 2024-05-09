@@ -22,7 +22,11 @@ func run(opts *options.Options) error {
 			return aws.FormatErrorAsMessageOnly(err)
 		}
 		nodeGroups = append(nodeGroups, *nodeGroup)
-		return karpenter.Generate(&nodeGroups)
+		nodePools, nodeClasses, err := karpenter.Generate(&nodeGroups)
+		if err != nil {
+			return err
+		}
+		return karpenter.Print(nodePools, nodeClasses)
 	}
 
 	nodeGroups, err := eksClient.GetAllNodeGroups(opts)
@@ -34,5 +38,9 @@ func run(opts *options.Options) error {
 		return fmt.Errorf("no nodegroups found")
 	}
 
-	return karpenter.Generate(&nodeGroups)
+	nodePools, nodeClasses, err := karpenter.Generate(&nodeGroups)
+	if err != nil {
+		return err
+	}
+	return karpenter.Print(nodePools, nodeClasses)
 }

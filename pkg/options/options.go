@@ -19,7 +19,7 @@ func New(cmd *cobra.Command) *Options {
 	cmd.Flags().StringVar(&opts.Profile, "profile", "", "use the specific profile from your credential file")
 	cmd.Flags().StringVar(&opts.Region, "region", "", "the region to use, overrides config/env settings")
 	cmd.Flags().BoolVar(&opts.Debug, "debug", opts.Debug, "")
-	cmd.Flags().MarkHidden("debug")
+	_ = cmd.Flags().MarkHidden("debug")
 	cmd.Flags().StringVar(&opts.ClusterName, "cluster", "", "name of the EKS cluster")
 	cmd.Flags().StringVar(&opts.NodegroupName, "nodegroup", "", "name of the EKS managed nodegroup")
 	cmd.SetHelpFunc(usage)
@@ -33,7 +33,7 @@ func (o *Options) Parse() {
 	}
 }
 
-func usage(cmd *cobra.Command, args []string) {
+func usage(cmd *cobra.Command, _ []string) {
 	usageString := `
 Description:
   A CLI tool to generate Karpenter Custom Resources such as

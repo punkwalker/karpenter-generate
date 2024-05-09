@@ -1,0 +1,32 @@
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+run:
+  tests: true
+
+  timeout: 10m
+
+linters:
+  enable:
+    - asciicheck
+    - bidichk
+    - errorlint
+    - exportloopref
+    - gofmt
+    - gosec
+    - goimports
+    - misspell
+    - nilerr
+    - revive
+    - unconvert
+    - unparam
+    - gocyclo 
+
+linters-settings:
+  misspell:
+    locale: US
+    ignore-words: [lustre]
+
+issues:
+  exclude-dirs:
+    - dist
+  # TODO: remove when linting errors in existing code have been cleared
+  new-from-rev: HEAD~1

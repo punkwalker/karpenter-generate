@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Long: `This is a CLI tool which can be used to generate Karpenter Custom Resources such as 
 Nodepools and EC2NodeClass from details of EKS Managed Nodegroup. Which will allow seamless migration to Karpenter.`,
 	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return run(opts)
 	},
 }

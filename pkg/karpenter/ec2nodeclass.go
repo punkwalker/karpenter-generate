@@ -23,7 +23,7 @@ var (
 	}
 )
 
-func NewNodeGroup(ng *ekstypes.Nodegroup) (*NodeGroup, error) {
+func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 
 	ec2Client := aws.NewEC2Client()
 	asgClient := aws.NewAutoscalingClient()
@@ -41,7 +41,7 @@ func NewNodeGroup(ng *ekstypes.Nodegroup) (*NodeGroup, error) {
 	}
 
 	return &NodeGroup{
-		Nodegroup: ng,
+		Nodegroup: &ng,
 		LtData:    lt[0].LaunchTemplateData,
 	}, nil
 }
@@ -58,7 +58,7 @@ func (n NodeGroup) Name() string {
 	return *n.NodegroupName
 }
 
-func (n NodeGroup) AmiId() string {
+func (n NodeGroup) AmiID() string {
 	return *n.LtData.ImageId
 }
 
@@ -122,7 +122,7 @@ func (n NodeGroup) AMIFamily() *string {
 func (n NodeGroup) AMISelectorTerms() []awskarpenter.AMISelectorTerm {
 	amiTerms := []awskarpenter.AMISelectorTerm{}
 	amiTerms = append(amiTerms, awskarpenter.AMISelectorTerm{
-		ID: *n.LtData.ImageId,
+		ID: n.AmiID(),
 	})
 	return amiTerms
 }
