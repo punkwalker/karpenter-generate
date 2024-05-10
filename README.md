@@ -30,12 +30,12 @@ As of now the tool can only be downloaded as a archive file from release artifac
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| MacOS   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Darwin_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Darwin_arm64.tar.gz)|
+| MacOS   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Darwin_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Darwin_arm64.tar.gz)|
 | Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Linux_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Linux_arm64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Linux_arm64.tar.gz)|
 | Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Windows_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Windows_arm64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Windows_arm64.tar.gz)|
 
 After downloading the archive, extract it and run the binary/executable of the tool.
 
