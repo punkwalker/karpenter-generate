@@ -33,16 +33,17 @@ func Client(context string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(restConfig)
 }
 
-func OptionsFromConfig() (string, string) {
+func OptionsFromConfig() (string, string, string) {
 	var clusterName string
 	var region string
+	var profile string
 	raw, err := Kubeconfig()
 	if err != nil {
-		return clusterName, region
+		return clusterName, region, profile
 	}
 
 	if err := clientcmdapi.MinifyConfig(raw); err != nil {
-		return clusterName, region
+		return clusterName, region, profile
 	}
 
 	for _, user := range raw.AuthInfos {
@@ -59,9 +60,12 @@ func OptionsFromConfig() (string, string) {
 			if env.Name == "AWS_REGION" {
 				region = env.Value
 			}
+			if env.Name == "AWS_PROFILE" {
+				profile = env.Value
+			}
 		}
 	}
-	return clusterName, region
+	return clusterName, region, profile
 }
 
 func ClusterURLForCurrentContext() string {

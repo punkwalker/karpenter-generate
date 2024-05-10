@@ -29,7 +29,7 @@ func New(cmd *cobra.Command) *Options {
 
 func (o *Options) Parse() {
 	if o.ClusterName == "" && o.Region == "" {
-		o.ClusterName, o.Region = k8s.OptionsFromConfig()
+		o.ClusterName, o.Region, o.Profile = k8s.OptionsFromConfig()
 	}
 }
 
@@ -40,7 +40,11 @@ Description:
   Nodepools and EC2NodeClass from details of EKS Managed Nodegroup
 
 Usage:
+  karpenter-generate [command]
   karpenter-generate [flags]
+
+Available Commands:
+  version     Print the version and build information for karpenter-generate
 
 Optional Flags:
   --cluster string     name of the EKS cluster 

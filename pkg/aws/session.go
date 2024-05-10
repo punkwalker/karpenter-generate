@@ -48,10 +48,3 @@ func GetConfig() aws.Config {
 
 	return cfg
 }
-
-func Region() string {
-	if region == "" {
-		GetConfig()
-	}
-	return region
-}
