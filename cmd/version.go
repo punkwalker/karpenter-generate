@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -27,8 +28,8 @@ var versionCmd = &cobra.Command{
 			Date:    date,
 			Commit:  commit,
 		}
-
-		fmt.Printf("karpenter-generate version info: %#v\n", kgVersion)
+		verBytes, _ := json.Marshal(kgVersion)
+		fmt.Println(string(verBytes))
 	},
 }
 

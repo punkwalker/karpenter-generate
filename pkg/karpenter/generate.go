@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/eks/types"
 	awskarpenter "github.com/aws/karpenter-provider-aws/pkg/apis/v1beta1"
-
 	"k8s.io/cli-runtime/pkg/printers"
 	sigkarpenter "sigs.k8s.io/karpenter/pkg/apis/v1beta1"
 )
