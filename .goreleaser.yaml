@@ -33,7 +33,7 @@ brews:
   - repository:
       owner: punkwalker
       name: homebrew-tap
-      branch: "{{.ProjectName}}-{{.Version}}"
+      branch: main
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: https://github.com/punkwalker/karpenter-generate

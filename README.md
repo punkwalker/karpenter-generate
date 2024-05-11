@@ -24,20 +24,24 @@ karpenter-generate  --cluster <Cluster_Name>  --region <Region>
 - Valid kubeconfig store at `$HOME/.kube/config`
 
 ## Installation
-To install the tool, follow these steps:
+### MacOS & Linux
+Use [Homebrew](https://brew.sh/) and run following command.
+```bash
+brew tap punkwalker/tap
+brew install karpenter-generate
+```
 
-As of now the tool can only be downloaded as a archive file from release artifacts. Download the archive file from relase page according to the Arch of your machine
+### Manually (Linux/Windows)
+Downloaded archive file from release artifacts. Download the archive file from relase page according to the Architecture of your machine
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| MacOS   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Darwin_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Darwin_arm64.tar.gz)|
 | Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Linux_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Linux_arm64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Linux_arm64.tar.gz)|
 | Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Windows_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.2/karpenter-generate_Windows_arm64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Windows_arm64.tar.gz)|
 
-After downloading the archive, extract it and run the binary/executable of the tool.
+After downloading the archive, extract it and copy the binary/executable to `/usr/local/bin` for Linux. For Windows, run the `karpenter-generate.exe` from extracted folder.
 
 ## Help
 ```bash
@@ -46,9 +50,13 @@ karpeter-generate  --help
 Description:
   A CLI tool to generate Karpenter Custom Resources such as
   Nodepools and EC2NodeClass from details of EKS Managed Nodegroup
-  
+
 Usage:
+  karpenter-generate [command]
   karpenter-generate [flags]
+
+Available Commands:
+  version     Print the version and build information for karpenter-generate
 
 Optional Flags:
   --cluster string     name of the EKS cluster 
