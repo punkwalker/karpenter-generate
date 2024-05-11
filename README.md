@@ -36,9 +36,9 @@ Downloaded archive file from release artifacts. Download the archive file from r
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Linux_x86_64.tar.gz)|
+| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Linux_x86_64.tar.gz)|
 |    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Linux_arm64.tar.gz)|
-| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.1/karpenter-generate_Windows_x86_64.tar.gz)|
+| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Windows_x86_64.tar.gz)|
 |    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Windows_arm64.tar.gz)|
 
 After downloading the archive, extract it and copy the binary/executable to `/usr/local/bin` for Linux. For Windows, run the `karpenter-generate.exe` from extracted folder.
