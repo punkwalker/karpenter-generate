@@ -26,3 +26,4 @@ dist/
 
 # local build artifacts
 karpenter-generate
+.DS_Store
