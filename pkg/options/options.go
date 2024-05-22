@@ -1,9 +1,9 @@
 package options
 
 import (
-	"github.com/spf13/cobra"
+	"fmt"
 
-	"github.com/punkwalker/karpenter-generate/pkg/k8s"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -27,10 +27,11 @@ func New(cmd *cobra.Command) *Options {
 	return &opts
 }
 
-func (o *Options) Parse() {
-	if o.ClusterName == "" && o.Region == "" {
-		o.ClusterName, o.Region, o.Profile = k8s.OptionsFromConfig()
+func (o *Options) Parse() error {
+	if o.ClusterName == "" || o.Region == "" {
+		return fmt.Errorf(`specify both flags "--cluster" and "--region" (e.g.: karpenter-generate --cluster <Cluster Name> --region <Region>)`)
 	}
+	return nil
 }
 
 func usage(cmd *cobra.Command, _ []string) {

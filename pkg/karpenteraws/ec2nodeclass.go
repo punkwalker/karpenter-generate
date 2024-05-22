@@ -1,12 +1,14 @@
-package karpenter
+package karpenteraws
 
 import (
+	"context"
 	"encoding/base64"
 	"strings"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	ekstypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	awskarpenter "github.com/aws/karpenter-provider-aws/pkg/apis/v1beta1"
+	k8sapiresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/punkwalker/karpenter-generate/pkg/aws"
@@ -18,12 +20,17 @@ type NodeGroup struct {
 	CustomLT *ec2types.ResponseLaunchTemplateData // Custom LT provided to MNG
 }
 
+const (
+	GiB           int64  = 1024 * 1024 * 1024
+	ClusterTagKey string = "kubernetes.io/cluster/"
+)
+
 var (
 	NodeClassTypeMeta = metav1.TypeMeta{
 		Kind:       "EC2NodeClass",
 		APIVersion: awskarpenter.SchemeGroupVersion.Identifier(),
 	}
-	CLUSTER_TAG map[string]string
+	ClusterTag map[string]string
 )
 
 func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
@@ -32,8 +39,8 @@ func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 		Nodegroup: &ng,
 	}
 
-	CLUSTER_TAG = map[string]string{
-		"kubernetes.io/cluster/" + *ng.ClusterName: "owned",
+	ClusterTag = map[string]string{
+		ClusterTagKey + *ng.ClusterName: "owned",
 	}
 
 	ec2Client := aws.NewEC2Client()
@@ -67,11 +74,15 @@ func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 }
 
 func (n *NodeGroup) GetEC2NodeClass() (awskarpenter.EC2NodeClass, error) {
-	return awskarpenter.EC2NodeClass{
+	nc := awskarpenter.EC2NodeClass{
 		TypeMeta:   NodeClassTypeMeta,
 		ObjectMeta: n.NodeClassObjectMeta(),
 		Spec:       n.NodeClassSpec(),
-	}, nil
+	}
+	if err := nc.Validate(context.TODO()); err != nil {
+		return awskarpenter.EC2NodeClass{}, err
+	}
+	return nc, nil
 }
 
 func (n NodeGroup) Name() string {
@@ -103,6 +114,7 @@ func (n NodeGroup) NodeClassSpec() awskarpenter.EC2NodeClassSpec {
 			SubnetSelectorTerms:        n.SubnetSelectorTerms(),
 			SecurityGroupSelectorTerms: n.SecurityGroupSelectorTerms(),
 			UserData:                   n.UserData(),
+			BlockDeviceMappings:        n.BlockDeviceMappings(),
 			Tags:                       n.FilteredTags(),
 		}
 	}
@@ -221,6 +233,50 @@ func (n NodeGroup) UserData() *string {
 		return &userData
 	}
 	return nil
+}
+
+// TODO: Check OS level differences for Mappings and Implement Instance Store logic
+func (n NodeGroup) BlockDeviceMappings() []*awskarpenter.BlockDeviceMapping {
+	mappings := []*awskarpenter.BlockDeviceMapping{}
+	if n.CustomLT != nil {
+		for _, mapping := range n.CustomLT.BlockDeviceMappings {
+			vtype := string(mapping.Ebs.VolumeType)
+			vsize := k8sapiresource.NewQuantity(int64(*mapping.Ebs.VolumeSize)*GiB, k8sapiresource.BinarySI)
+			iops := int64(*mapping.Ebs.Iops)
+			throughput := int64(*mapping.Ebs.Throughput)
+			bMap := &awskarpenter.BlockDeviceMapping{
+				DeviceName: mapping.DeviceName,
+				EBS: &awskarpenter.BlockDevice{
+					VolumeSize:          vsize,
+					VolumeType:          &vtype,
+					DeleteOnTermination: mapping.Ebs.DeleteOnTermination,
+					Encrypted:           mapping.Ebs.Encrypted,
+					IOPS:                &iops,
+					KMSKeyID:            mapping.Ebs.KmsKeyId,
+					SnapshotID:          mapping.Ebs.SnapshotId,
+					Throughput:          &throughput,
+				},
+			}
+			mappings = append(mappings, bMap)
+		}
+		return mappings
+	}
+
+	if n.DiskSize != nil {
+		vname := "/dev/xvda"
+		vtype := string(ec2types.VolumeTypeGp2)
+		termination := true
+		mappings = append(mappings, &awskarpenter.BlockDeviceMapping{
+			DeviceName: &vname,
+			EBS: &awskarpenter.BlockDevice{
+				VolumeSize:          k8sapiresource.NewQuantity(int64(*n.DiskSize)*GiB, k8sapiresource.BinarySI),
+				VolumeType:          &vtype,
+				DeleteOnTermination: &termination,
+			},
+		})
+	}
+
+	return mappings
 }
 
 // TODO: Implement logic for BlockDeviceMapping

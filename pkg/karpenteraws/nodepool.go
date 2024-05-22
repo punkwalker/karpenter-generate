@@ -1,6 +1,7 @@
-package karpenter
+package karpenteraws
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -21,11 +22,16 @@ var (
 )
 
 func (n *NodeGroup) GetNodePool() (sigkarpenter.NodePool, error) {
-	return sigkarpenter.NodePool{
+	np := sigkarpenter.NodePool{
 		TypeMeta:   NodePoolTypeMeta,
 		ObjectMeta: n.NodePoolObjectMeta(),
 		Spec:       n.NodePoolSpec(),
-	}, nil
+	}
+
+	if err := np.Validate(context.TODO()); err != nil {
+		return sigkarpenter.NodePool{}, err
+	}
+	return np, nil
 }
 
 func (n NodeGroup) NodePoolObjectMeta() metav1.ObjectMeta {
