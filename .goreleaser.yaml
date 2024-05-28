@@ -35,7 +35,7 @@ brews:
       name: homebrew-tap
       branch: main
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
-    folder: Formula
+    directory: Formula
     homepage: https://github.com/punkwalker/karpenter-generate
     description: A simple CLI tool to generate Karpenter CRDs from EKS Managed Node Groups
     license: MIT-0

@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 Nodepools and EC2NodeClass from details of EKS Managed Nodegroup. Which will allow seamless migration to Karpenter.`,
 	SilenceUsage: true,
 	RunE: func(_ *cobra.Command, _ []string) error {
-		return run(opts)
+		return run()
 	},
 }
 

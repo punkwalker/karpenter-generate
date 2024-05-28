@@ -28,5 +28,3 @@ linters-settings:
 issues:
   exclude-dirs:
     - dist
-  # TODO: remove when linting errors in existing code have been cleared
-  new-from-rev: HEAD~1
