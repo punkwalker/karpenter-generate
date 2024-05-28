@@ -8,6 +8,7 @@ import (
 
 	ekstypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	awskarpenter "github.com/aws/karpenter-provider-aws/pkg/apis/v1beta1"
+	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,13 +53,11 @@ func (n NodeGroup) NodePoolObjectMeta() metav1.ObjectMeta {
 }
 
 func (n NodeGroup) NodePoolSpec() sigkarpenter.NodePoolSpec {
-	consolidateAfter := 30 * time.Second
-
 	return sigkarpenter.NodePoolSpec{
 		Template: n.NodeClaimTemplate(),
 		Disruption: sigkarpenter.Disruption{
 			ConsolidateAfter: &sigkarpenter.NillableDuration{
-				Duration: &consolidateAfter,
+				Duration: lo.ToPtr(30 * time.Second),
 			},
 			ConsolidationPolicy: sigkarpenter.ConsolidationPolicyWhenEmpty,
 		},
