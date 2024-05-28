@@ -7,39 +7,21 @@ import (
 
 	"github.com/punkwalker/karpenter-generate/pkg/aws"
 	"github.com/punkwalker/karpenter-generate/pkg/karpenteraws"
-	"github.com/punkwalker/karpenter-generate/pkg/options"
 	"github.com/punkwalker/karpenter-generate/pkg/printers"
 )
 
-func run(opts *options.Options) error {
+func run() error {
 	aws.Init(opts)
 	if err := opts.Parse(); err != nil {
 		return err
 	}
-	var nodeGroups []types.Nodegroup
 
-	eksClient := aws.NewEKSClient()
-	printer, err := printers.NewPrinter("yaml")
+	printer, err := printers.NewPrinter(printers.Output(opts.Output))
 	if err != nil {
 		return err
 	}
 
-	if opts.NodegroupName != "" {
-		nodeGroup, err := eksClient.DescribeNodegroup(opts.ClusterName, opts.NodegroupName)
-		if err != nil {
-			return aws.FormatErrorAsMessageOnly(err)
-		}
-		nodeGroups = append(nodeGroups, *nodeGroup)
-
-		nodePools, nodeClasses, err := karpenteraws.Generate(&nodeGroups)
-		if err != nil {
-			return err
-		}
-
-		return printers.Print(printer, nodePools, nodeClasses)
-	}
-
-	nodeGroups, err = eksClient.GetAllNodeGroups(opts)
+	nodeGroups, err := getNodegroups()
 	if err != nil {
 		return aws.FormatErrorAsMessageOnly(err)
 	}
@@ -53,4 +35,36 @@ func run(opts *options.Options) error {
 		return err
 	}
 	return printers.Print(printer, nodePools, nodeClasses)
+}
+
+func getNodegroups() ([]types.Nodegroup, error) {
+	var nodegroups []types.Nodegroup
+	var ngList []string
+	var err error
+
+	eksClient := aws.NewEKSClient()
+
+	if opts.NodegroupName != "" {
+		ngList = []string{opts.NodegroupName}
+	} else {
+		ngList, err = eksClient.ListNodegroups(opts.ClusterName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, ng := range ngList {
+		if opts.KarpenterNodegroupName != ng {
+			nodegroup, err := eksClient.DescribeNodegroup(opts.ClusterName, ng)
+			if err != nil {
+				return nil, err
+			}
+
+			if nodegroup.Status != "ACTIVE" {
+				return nil, fmt.Errorf(`nodegroup "%s" is not active, make sure all the nodegroups are in "ACTIVE" state`, ng)
+			}
+			nodegroups = append(nodegroups, *nodegroup)
+		}
+	}
+	return nodegroups, nil
 }

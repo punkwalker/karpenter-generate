@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/aws-sdk-go-v2/service/eks/types"
-	"github.com/punkwalker/karpenter-generate/pkg/options"
 )
 
 type EKSClient struct {
@@ -15,26 +14,6 @@ type EKSClient struct {
 
 func NewEKSClient() *EKSClient {
 	return &EKSClient{eks.NewFromConfig(GetConfig())}
-}
-
-func (c *EKSClient) GetAllNodeGroups(opts *options.Options) ([]types.Nodegroup, error) {
-	var nodegroups []types.Nodegroup
-	ngList, err := c.ListNodegroups(opts.ClusterName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for _, ng := range ngList {
-		nodegroup, err := c.DescribeNodegroup(opts.ClusterName, ng)
-		if err != nil {
-			return nil, err
-		}
-
-		nodegroups = append(nodegroups, *nodegroup)
-	}
-
-	return nodegroups, nil
 }
 
 func (c *EKSClient) ListNodegroups(clusterName string) ([]string, error) {

@@ -1,32 +1,33 @@
-# `karpenter-generate`
+# `karpenter-generate` 
 This is a simple CLI tool to generate AWS Karpenter Custom Kubernetes Resources (Nodepool & EC2NodeClass) from AWS EKS Managed Nodegroup information. The generated resources can be stored in as a yaml manifest file or can be directly applied to the cluster.
+
+> [!WARNING] 
+> The tool can only generate ***v1beta*** resources for [Karpenter on AWS](https://karpenter.sh/). 
+> Compatible with Karpenter ***v.0.32.0*** onwards
 
 ## Example Usage
 ### For All Managed Nodegroups
-The tool can be used without any flag and it will scan all the Managed Nodegroups in the cluster. The cluster to scan is decided based on current-context in kubeconfig
-```bash
-karpenter-generate
 ```
-### For specific Managed Nodegroup
-To generate Karpenter Custom Resources for a specific Managed Nodegroup.
-```bash
-karpenter-generate --nodegroup <Managed_Nodegroup_Name>
+karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup fargate (If Karpenter is deployed on Fargate)
+
+OR
+
+karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup <Managed Node Group Name>
 ```
 
-### For cluster other than current-context
-To specifcy other cluster than current-context
-```bash
-karpenter-generate  --cluster <Cluster_Name>  --region <Region>
+### For specific Managed Nodegroup
+To generate Karpenter Custom Resources for a specific Managed Nodegroup.
+```
+karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup fargate --nodegroup <Managed_Nodegroup_Name>
 ```
 
 ## Prerequisites
-- Configured [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-- Valid kubeconfig store at `$HOME/.kube/config`
+- Propely Configured [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
 ## Installation
 ### MacOS & Linux
 Use [Homebrew](https://brew.sh/) and run following command.
-```bash
+```
 brew tap punkwalker/tap
 brew install karpenter-generate
 ```
@@ -36,15 +37,15 @@ Downloaded archive file from release artifacts. Download the archive file from r
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Linux_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Linux_arm64.tar.gz)|
-| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Windows_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.3/karpenter-generate_Windows_arm64.tar.gz)|
+| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Linux_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Linux_arm64.tar.gz)|
+| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Windows_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Windows_arm64.tar.gz)|
 
 After downloading the archive, extract it and copy the binary/executable to `/usr/local/bin` for Linux. For Windows, run the `karpenter-generate.exe` from extracted folder.
 
 ## Help
-```bash
+```
 karpeter-generate  --help
 
 Description:
@@ -52,22 +53,26 @@ Description:
   Nodepools and EC2NodeClass from details of EKS Managed Nodegroup
 
 Usage:
-  karpenter-generate [command]
-  karpenter-generate [flags]
+  karpenter-generate --cluster <Cluster Name> --karpenter-nodegroup <Karpenter Nodegroup Name> [flags]
 
 Available Commands:
   version     Print the version and build information for karpenter-generate
 
-Optional Flags:
-  --cluster string     name of the EKS cluster 
-                       (default: from kubeconfig current-context)
+Flags:
+  --cluster string               name of the EKS cluster 
+  --karpenter-nodegroup string   name of the EKS managed nodegroup running Karpenter deployment or fargate
+									 
+Optiona Flags:
   --nodegroup string   name of the EKS managed nodegroup 
-                       (default: all the nodegroups)
-  --region string      the region to use, overrides config/env settings 
-                       (default: from kubeconfig current-context or AWS config)
+                       (default: all the nodegroups expectthe one running Karpenter)
+  --region string      region of EKS cluster, overrides AWS CLI configuration/ENV values 
+                       (default: AWS CLI configuration)
   --profile string     use the specific profile from your credential file 
-                       (default: from kubeconfig current-context or AWS config)
+                       (default: AWS CLI configuration)
+  --output string      output format (yaml or json)
+					   (default: yaml)
   -h, --help           help for karpenter-generate
+	`
 ```
 
 ## Contributing

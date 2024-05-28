@@ -7,11 +7,13 @@ import (
 )
 
 type Options struct {
-	ClusterName   string
-	NodegroupName string
-	Profile       string
-	Region        string
-	Debug         bool
+	ClusterName            string
+	NodegroupName          string
+	KarpenterNodegroupName string
+	Profile                string
+	Region                 string
+	Output                 string
+	Debug                  bool
 }
 
 func New(cmd *cobra.Command) *Options {
@@ -19,17 +21,24 @@ func New(cmd *cobra.Command) *Options {
 	cmd.Flags().StringVar(&opts.Profile, "profile", "", "use the specific profile from your credential file")
 	cmd.Flags().StringVar(&opts.Region, "region", "", "the region to use, overrides config/env settings")
 	cmd.Flags().BoolVar(&opts.Debug, "debug", opts.Debug, "")
-	_ = cmd.Flags().MarkHidden("debug")
 	cmd.Flags().StringVar(&opts.ClusterName, "cluster", "", "name of the EKS cluster")
 	cmd.Flags().StringVar(&opts.NodegroupName, "nodegroup", "", "name of the EKS managed nodegroup")
+	cmd.Flags().StringVar(&opts.KarpenterNodegroupName, "karpenter-nodegroup", "", "name of the EKS managed nodegroup running Karpenter deployment")
+	cmd.Flags().StringVarP(&opts.Output, "output", "o", "yaml", "name of the EKS managed nodegroup running Karpenter deployment")
+	_ = cmd.MarkFlagRequired("cluster")
+	_ = cmd.MarkFlagRequired("karpenter-nodegroup")
+	_ = cmd.Flags().MarkHidden("debug")
 	cmd.SetHelpFunc(usage)
 
 	return &opts
 }
 
 func (o *Options) Parse() error {
-	if o.ClusterName == "" || o.Region == "" {
-		return fmt.Errorf(`specify both flags "--cluster" and "--region" (e.g.: karpenter-generate --cluster <Cluster Name> --region <Region>)`)
+	if o.ClusterName == "" {
+		return fmt.Errorf(`specify value for "--cluster" flag (e.g.: karpenter-generate --cluster <Cluster Name> --karpenter-nodegroup <Karpenter Nodegroup Name>)`)
+	}
+	if o.KarpenterNodegroupName == "" {
+		return fmt.Errorf(`specify value for "--karpenter-nodegroup" flag (e.g.: karpenter-generate --cluster <Cluster Name> --karpenter-nodegroup <Karpenter Nodegroup Name>)`)
 	}
 	return nil
 }
@@ -41,21 +50,24 @@ Description:
   Nodepools and EC2NodeClass from details of EKS Managed Nodegroup
 
 Usage:
-  karpenter-generate [command]
-  karpenter-generate [flags]
+  karpenter-generate --cluster <Cluster Name> --karpenter-nodegroup <Karpenter Nodegroup Name>
 
 Available Commands:
   version     Print the version and build information for karpenter-generate
 
-Optional Flags:
-  --cluster string     name of the EKS cluster 
-                       (default: from kubeconfig current-context)
+Flags:
+  --cluster string               name of the EKS cluster 
+  --karpenter-nodegroup string   name of the EKS managed nodegroup running Karpenter deployment or fargate
+									 
+Optiona Flags:
   --nodegroup string   name of the EKS managed nodegroup 
-                       (default: all the nodegroups)
-  --region string      the region to use, overrides config/env settings 
-                       (default: from kubeconfig current-context or AWS config)
+                       (default: all the nodegroups expectthe one running Karpenter)
+  --region string      region of EKS cluster, overrides AWS CLI configuration/ENV values 
+                       (default: AWS CLI configuration)
   --profile string     use the specific profile from your credential file 
-                       (default: from kubeconfig current-context or AWS config)
+                       (default: AWS CLI configuration)
+  --output string      output format (yaml or json)
+					   (default: yaml)
   -h, --help           help for karpenter-generate
 	`
 	cmd.Println(usageString)

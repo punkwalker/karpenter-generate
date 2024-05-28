@@ -9,18 +9,25 @@ import (
 	sigkarpenter "sigs.k8s.io/karpenter/pkg/apis/v1beta1"
 )
 
+type Output string
+
 type OutputPrinter struct {
 	printers.ResourcePrinter
 }
 
-func NewPrinter(output string) (printers.ResourcePrinter, error) {
-	switch output {
-	case "yaml":
+const (
+	YAML Output = "yaml"
+	JSON Output = "json"
+)
+
+func NewPrinter(format Output) (printers.ResourcePrinter, error) {
+	switch format {
+	case YAML:
 		return &printers.YAMLPrinter{}, nil
-	case "json":
+	case JSON:
 		return &printers.JSONPrinter{}, nil
 	default:
-		return nil, fmt.Errorf("invalid output type")
+		return nil, fmt.Errorf(`invalid output type, valid values are "yaml" or "json"`)
 	}
 }
 
