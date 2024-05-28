@@ -16,8 +16,8 @@ import (
 const (
 	GiB                              int64  = 1024 * 1024 * 1024
 	ClusterTagKey                    string = "kubernetes.io/cluster/"
-	ALAndBottleRocketDefaultDiskSize        = 20
-	WindowsDefaultDiskSize                  = 50
+	ALAndBottleRocketDefaultDiskSize int32  = 20
+	WindowsDefaultDiskSize           int32  = 50
 )
 
 var (
@@ -46,7 +46,12 @@ func (n NodeGroup) Name() string {
 
 func (n NodeGroup) AmiID() string {
 	// TODO: implement preserve AMIId for MNG
-	return *n.CustomLT.ImageId
+	if n.CustomLT != nil {
+		if n.CustomLT.ImageId != nil {
+			return *n.CustomLT.ImageId
+		}
+	}
+	return ""
 }
 
 func (n NodeGroup) NodeClassObjectMeta() metav1.ObjectMeta {
@@ -76,6 +81,14 @@ func (n NodeGroup) NodeClassSpec() awskarpenter.EC2NodeClassSpec {
 
 func (n NodeGroup) FilteredTags() map[string]string {
 	filteredTags := map[string]string{}
+
+	for key, val := range n.Tags {
+		if !strings.HasPrefix(key, "aws:") {
+			filteredTags[key] = val
+		}
+	}
+
+	// Custom Launch Template tags take precedence
 	if n.CustomLT != nil {
 		for _, tagspec := range n.CustomLT.TagSpecifications {
 			for _, tag := range tagspec.Tags {
@@ -83,12 +96,6 @@ func (n NodeGroup) FilteredTags() map[string]string {
 					filteredTags[*tag.Key] = *tag.Value
 				}
 			}
-		}
-	}
-
-	for key, val := range n.Tags {
-		if !strings.HasPrefix(key, "aws:") {
-			filteredTags[key] = val
 		}
 	}
 	return filteredTags
@@ -109,10 +116,6 @@ func (n NodeGroup) AMIFamily() *string {
 	default:
 		return lo.ToPtr(awskarpenter.AMIFamilyCustom)
 	}
-}
-
-func (n NodeGroup) IsCustomAMIFamily() bool {
-	return n.AmiType == ekstypes.AMITypesCustom
 }
 
 func (n NodeGroup) AMISelectorTerms() []awskarpenter.AMISelectorTerm {
@@ -225,33 +228,35 @@ func (n NodeGroup) BlockDeviceMappings() []*awskarpenter.BlockDeviceMapping {
 	}
 
 	// Managed Node Group DiskSize - https: //docs.aws.amazon.com/eks/latest/APIReference/API_CreateNodegroup.html#AmazonEKS-CreateNodegroup-request-diskSize
-	if *n.DiskSize != ALAndBottleRocketDefaultDiskSize && (n.AMIFamily() == &awskarpenter.AMIFamilyAL2 || n.AMIFamily() == &awskarpenter.AMIFamilyAL2023 || n.AMIFamily() == &awskarpenter.AMIFamilyBottlerocket) {
+	if *n.DiskSize != ALAndBottleRocketDefaultDiskSize && (*n.AMIFamily() == awskarpenter.AMIFamilyAL2 || *n.AMIFamily() == awskarpenter.AMIFamilyAL2023 || n.AMIFamily() == &awskarpenter.AMIFamilyBottlerocket) {
 		diskSize = k8sapiresource.NewQuantity(int64(*n.DiskSize)*GiB, k8sapiresource.BinarySI)
 	}
-	if *n.DiskSize != WindowsDefaultDiskSize && (n.AMIFamily() == &awskarpenter.AMIFamilyWindows2019 || n.AMIFamily() == &awskarpenter.AMIFamilyWindows2022) {
+	if *n.DiskSize != WindowsDefaultDiskSize && (*n.AMIFamily() == awskarpenter.AMIFamilyWindows2019 || *n.AMIFamily() == awskarpenter.AMIFamilyWindows2022) {
 		diskSize = k8sapiresource.NewQuantity(int64(*n.DiskSize)*GiB, k8sapiresource.BinarySI)
 	}
 
 	// Update the diskSize in default mappings if value is Set
+	amiFamily := awskarpenterprovider.GetAMIFamily(n.AMIFamily(), &awskarpenterprovider.Options{})
+	mappings = amiFamily.DefaultBlockDeviceMappings()
 	if diskSize != nil {
-		amiFamily := awskarpenterprovider.GetAMIFamily(n.AMIFamily(), &awskarpenterprovider.Options{})
-		mappings = amiFamily.DefaultBlockDeviceMappings()
 		for _, mapping := range mappings {
-			mapping.EBS.VolumeSize = k8sapiresource.NewQuantity(int64(*n.DiskSize)*GiB, k8sapiresource.BinarySI)
+			mapping.EBS.VolumeSize = diskSize
 		}
 	}
 	return mappings
 }
 
 func (n NodeGroup) MetadataOptions() *awskarpenter.MetadataOptions {
-	if n.CustomLT != nil && n.CustomLT.MetadataOptions != nil {
-		metaOptions := &awskarpenter.MetadataOptions{
-			HTTPEndpoint:            lo.EmptyableToPtr(string(lo.FromPtr(&n.CustomLT.MetadataOptions.HttpEndpoint))),
-			HTTPPutResponseHopLimit: lo.EmptyableToPtr(int64(lo.FromPtr(n.LT.MetadataOptions.HttpPutResponseHopLimit))),
-			HTTPTokens:              lo.EmptyableToPtr(string(lo.FromPtr(&n.CustomLT.MetadataOptions.HttpTokens))),
-			HTTPProtocolIPv6:        lo.EmptyableToPtr(string(lo.FromPtr(&n.LT.MetadataOptions.HttpProtocolIpv6))),
+	if n.CustomLT != nil {
+		if n.CustomLT.MetadataOptions != nil {
+			metaOptions := &awskarpenter.MetadataOptions{
+				HTTPEndpoint:            lo.EmptyableToPtr(string(lo.FromPtr(&n.CustomLT.MetadataOptions.HttpEndpoint))),
+				HTTPPutResponseHopLimit: lo.EmptyableToPtr(int64(lo.FromPtr(n.CustomLT.MetadataOptions.HttpPutResponseHopLimit))),
+				HTTPTokens:              lo.EmptyableToPtr(string(lo.FromPtr(&n.CustomLT.MetadataOptions.HttpTokens))),
+				HTTPProtocolIPv6:        lo.EmptyableToPtr(string(lo.FromPtr(&n.CustomLT.MetadataOptions.HttpProtocolIpv6))),
+			}
+			return metaOptions
 		}
-		return metaOptions
 	}
 	return nil
 }

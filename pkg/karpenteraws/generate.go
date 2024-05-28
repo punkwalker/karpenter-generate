@@ -51,7 +51,6 @@ func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 	}
 
 	ec2Client := aws.NewEC2Client()
-	asgClient := aws.NewAutoscalingClient()
 
 	if ng.LaunchTemplate != nil {
 		customLT, err := ec2Client.DescribeLaunchTemplateVersions(
@@ -62,20 +61,6 @@ func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 		}
 		newNodegroup.CustomLT = customLT[0].LaunchTemplateData
 	}
-
-	asg, err := asgClient.DescribeAutoScalingGroups(*ng.Resources.AutoScalingGroups[0].Name)
-	if err != nil {
-		return nil, aws.FormatErrorAsMessageOnly(err)
-	}
-
-	lt, err := ec2Client.DescribeLaunchTemplateVersions(
-		*asg[0].MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateId,
-		*asg[0].MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.Version)
-	if err != nil {
-		return nil, aws.FormatErrorAsMessageOnly(err)
-	}
-
-	newNodegroup.LT = lt[0].LaunchTemplateData
 
 	return &newNodegroup, nil
 }

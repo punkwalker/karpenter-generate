@@ -20,6 +20,12 @@ lint:
 tidy:
 	go mod tidy
 
-.PHONY: build install lint tidy
+test:
+	go test ./... -coverprofile=cover.out
+
+coverage: 
+	go tool cover -html=cover.out
+
+.PHONY: build install lint tidy test coverage
 
 
