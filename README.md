@@ -10,7 +10,7 @@ This is a simple CLI tool to generate AWS Karpenter Custom Kubernetes Resources 
 ```
 karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup fargate (If Karpenter is deployed on Fargate)
 
-OR
+## OR ##
 
 karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup <Managed Node Group Name>
 ```
@@ -37,12 +37,49 @@ Downloaded archive file from release artifacts. Download the archive file from r
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Linux_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Linux_arm64.tar.gz)|
-| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Windows_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.4/karpenter-generate_Windows_arm64.tar.gz)|
+| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Linux_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Linux_arm64.tar.gz)|
+| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Windows_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Windows_arm64.tar.gz)|
 
 After downloading the archive, extract it and copy the binary/executable to `/usr/local/bin` for Linux. For Windows, run the `karpenter-generate.exe` from extracted folder.
+
+## Using generated CRDs
+1. Install Karpenter 
+   
+   Follow instructions from [Karpenter installation](https://karpenter.sh/v0.32/getting-started/getting-started-with-karpenter/#4-install-karpenter) and install Karpenter v0.32.0+. _(Recommended: Deploy Karpenter on Fargate)_
+
+2. Generate Custom Resources using `karpenter-generate`
+
+    Run following commands to generate the resources and store in a file.
+    ```
+    $ karpenter-generate --cluster <Cluster_Name> --karpenter-nodegroup fargate > karpenter-resources.yaml
+    ```
+
+3. [Optional] Review generated resources or make any changes if desired.
+
+4. Create resources
+
+    Run following command to create resources using YAML file
+    ```
+    $ kubectl apply -f karpenter-resources.yaml
+    ```
+
+5. Scale down Managed Node Groups
+    
+    Once the resources are created successfully, 
+    + Taint Managed Node Group with following taint to evict pods:
+      ```
+      Key: karpenter-migration
+      Value: true
+      Effect: NoExecute
+
+      ## OR Individual node can be tainted using below command ##
+      
+      $ kubectl taint node <node_name> karpenter-migration=true:NoExecute
+      ```
+    + Keep following karpenter pod logs to check if karpenter is scaling the nodes for evicted pods.
+    + After all evicted pods are successfully scheduled on Karpneter nodes. Scale down Managed Node Groups to 0. 
 
 ## Help
 ```
@@ -60,7 +97,7 @@ Available Commands:
 
 Flags:
   --cluster string               name of the EKS cluster 
-  --karpenter-nodegroup string   name of the EKS managed nodegroup running Karpenter deployment or fargate
+  --karpenter-nodegroup string   name of the EKS managed nodegroup running Karpenter deployment or Fargate
 									 
 Optiona Flags:
   --nodegroup string   name of the EKS managed nodegroup 
