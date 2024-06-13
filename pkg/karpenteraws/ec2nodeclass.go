@@ -18,6 +18,7 @@ const (
 	ClusterTagKey                    string = "kubernetes.io/cluster/"
 	ALAndBottleRocketDefaultDiskSize int32  = 20
 	WindowsDefaultDiskSize           int32  = 50
+	TagLabelPattern                  string = `^(aws:|eksctl|alpha\.eksctl\.io|Name)`
 )
 
 var (
@@ -56,7 +57,8 @@ func (n NodeGroup) AmiID() string {
 
 func (n NodeGroup) NodeClassObjectMeta() metav1.ObjectMeta {
 	nodeClassannotations := map[string]string{
-		"generated-by": "karpenter-migrate",
+		"generated-by":                          "karpenter-migrate",
+		"migrate.karpenter.sh/source-nodegroup": n.Name(),
 	}
 
 	return metav1.ObjectMeta{
@@ -81,9 +83,8 @@ func (n NodeGroup) NodeClassSpec() awskarpenter.EC2NodeClassSpec {
 
 func (n NodeGroup) FilteredTags() map[string]string {
 	filteredTags := map[string]string{}
-
 	for key, val := range n.Tags {
-		if !strings.HasPrefix(key, "aws:") {
+		if !tagLabeltoOmmit(key) {
 			filteredTags[key] = val
 		}
 	}
@@ -92,7 +93,7 @@ func (n NodeGroup) FilteredTags() map[string]string {
 	if n.CustomLT != nil {
 		for _, tagspec := range n.CustomLT.TagSpecifications {
 			for _, tag := range tagspec.Tags {
-				if !strings.HasPrefix(*tag.Key, "aws:") {
+				if !tagLabeltoOmmit(*tag.Key) {
 					filteredTags[*tag.Key] = *tag.Value
 				}
 			}
