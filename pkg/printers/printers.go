@@ -32,15 +32,18 @@ func NewPrinter(format Output) (printers.ResourcePrinter, error) {
 }
 
 func Print(p printers.ResourcePrinter, nodePools []sigkarpenter.NodePool, nodeClasses []awskarpenter.EC2NodeClass) error {
-	if len(nodePools) != len(nodeClasses) {
-		return fmt.Errorf("no. of nodepools is not equal to no. of nodeclass")
-	}
-	for idx := range len(nodePools) {
-		err := p.PrintObj(&nodePools[idx], os.Stdout)
+
+	for _, np := range nodePools {
+		// #nosec G601
+		err := p.PrintObj(&np, os.Stdout)
 		if err != nil {
 			return err
 		}
-		err = p.PrintObj(&nodeClasses[idx], os.Stdout)
+	}
+
+	for _, nc := range nodeClasses {
+		// #nosec G601
+		err := p.PrintObj(&nc, os.Stdout)
 		if err != nil {
 			return err
 		}

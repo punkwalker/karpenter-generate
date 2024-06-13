@@ -2,13 +2,10 @@ package karpenteraws
 
 import (
 	"context"
-	"strconv"
 	"strings"
-	"time"
 
 	ekstypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	awskarpenter "github.com/aws/karpenter-provider-aws/pkg/apis/v1beta1"
-	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,14 +33,9 @@ func (n *NodeGroup) GetNodePool() (sigkarpenter.NodePool, error) {
 }
 
 func (n NodeGroup) NodePoolObjectMeta() metav1.ObjectMeta {
-	min := i32Toa(*n.ScalingConfig.MinSize)
-	max := i32Toa(*n.ScalingConfig.MaxSize)
-	desired := i32Toa(*n.ScalingConfig.DesiredSize)
 	nodePoolAnnotations := map[string]string{
-		"generated-by":                 "karpenter-migrate",
-		"migrate.karpenter.io/min":     min,
-		"migrate.karpenter.io/max":     max,
-		"migrate.karpenter.io/desired": desired,
+		"generated-by":                          "karpenter-migrate",
+		"migrate.karpenter.sh/source-nodegroup": n.Name(),
 	}
 
 	return metav1.ObjectMeta{
@@ -56,10 +48,7 @@ func (n NodeGroup) NodePoolSpec() sigkarpenter.NodePoolSpec {
 	return sigkarpenter.NodePoolSpec{
 		Template: n.NodeClaimTemplate(),
 		Disruption: sigkarpenter.Disruption{
-			ConsolidateAfter: &sigkarpenter.NillableDuration{
-				Duration: lo.ToPtr(30 * time.Second),
-			},
-			ConsolidationPolicy: sigkarpenter.ConsolidationPolicyWhenEmpty,
+			ConsolidationPolicy: sigkarpenter.ConsolidationPolicyWhenUnderutilized,
 		},
 		Limits: sigkarpenter.Limits{
 			corev1.ResourceCPU: resource.MustParse("1000"),
@@ -75,8 +64,14 @@ func (n NodeGroup) NodeClaimTemplate() sigkarpenter.NodeClaimTemplate {
 }
 
 func (n NodeGroup) NodeClaimObjectMeta() sigkarpenter.ObjectMeta {
+	filteredLabels := map[string]string{}
+	for key, val := range n.Labels {
+		if !tagLabeltoOmmit(key) {
+			filteredLabels[key] = val
+		}
+	}
 	return sigkarpenter.ObjectMeta{
-		Labels: n.Labels,
+		Labels: filteredLabels,
 	}
 }
 
@@ -167,8 +162,4 @@ func (n NodeGroup) K8sTaints() []corev1.Taint {
 		taints = append(taints, taint)
 	}
 	return taints
-}
-
-func i32Toa(i int32) string {
-	return strconv.Itoa(int(i))
 }

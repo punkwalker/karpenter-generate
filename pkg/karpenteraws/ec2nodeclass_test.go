@@ -104,7 +104,8 @@ func TestNodeGroup_NodeClassObjectMeta(t *testing.T) {
 			want: metav1.ObjectMeta{
 				Name: "my-node-group",
 				Annotations: map[string]string{
-					"generated-by": "karpenter-migrate",
+					"generated-by":                          "karpenter-migrate",
+					"migrate.karpenter.sh/source-nodegroup": "my-node-group",
 				},
 			},
 		},

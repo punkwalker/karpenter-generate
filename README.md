@@ -1,5 +1,5 @@
 # `karpenter-generate` 
-This is a simple CLI tool to generate AWS Karpenter Custom Kubernetes Resources (Nodepool & EC2NodeClass) from AWS EKS Managed Nodegroup information. The generated resources can be stored in as a yaml manifest file or can be directly applied to the cluster.
+This is a simple CLI tool to generate AWS Karpenter Custom Kubernetes Resources (Nodepool & EC2NodeClass) from AWS EKS Managed Nodegroup information. It will merge similar CRDs if they are equal which reduce number of generated resources. The generated resources can be stored in as a yaml manifest file or can be directly applied to the cluster.
 
 > [!WARNING] 
 > The tool can only generate ***v1beta*** resources for [Karpenter on AWS](https://karpenter.sh/). 
@@ -37,10 +37,10 @@ Downloaded archive file from release artifacts. Download the archive file from r
 
 | OS | Arch | Download|
 | ------ | ------ | ------ |
-| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Linux_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Linux_arm64.tar.gz)|
-| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Windows_x86_64.tar.gz)|
-|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.5/karpenter-generate_Windows_arm64.tar.gz)|
+| Linux   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.6/karpenter-generate_Linux_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.6/karpenter-generate_Linux_arm64.tar.gz)|
+| Windows   | AMD64/x86_64 | [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.6/karpenter-generate_Windows_x86_64.tar.gz)|
+|    | ARM64| [Link](https://github.com/punkwalker/karpenter-generate/releases/download/v0.0.6/karpenter-generate_Windows_arm64.tar.gz)|
 
 After downloading the archive, extract it and copy the binary/executable to `/usr/local/bin` for Linux. For Windows, run the `karpenter-generate.exe` from extracted folder.
 

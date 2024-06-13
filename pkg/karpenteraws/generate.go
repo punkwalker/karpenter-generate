@@ -1,11 +1,17 @@
 package karpenteraws
 
 import (
+	"fmt"
+	"regexp"
+
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	ekstypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 	awskarpenter "github.com/aws/karpenter-provider-aws/pkg/apis/v1beta1"
-	"github.com/punkwalker/karpenter-generate/pkg/aws"
+	"github.com/samber/lo"
 	sigkarpenter "sigs.k8s.io/karpenter/pkg/apis/v1beta1"
+
+	"github.com/punkwalker/karpenter-generate/pkg/aws"
+	"github.com/punkwalker/karpenter-generate/pkg/options"
 )
 
 type NodeGroup struct {
@@ -14,11 +20,21 @@ type NodeGroup struct {
 	CustomLT *ec2types.ResponseLaunchTemplateData // Custom LT provided to MNG
 }
 
-func Generate(nodeGroups *[]ekstypes.Nodegroup) ([]sigkarpenter.NodePool, []awskarpenter.EC2NodeClass, error) {
-	nodePools := make([]sigkarpenter.NodePool, 0, len(*nodeGroups))
-	nodeClasses := make([]awskarpenter.EC2NodeClass, 0, len(*nodeGroups))
+func Generate(opts *options.Options) ([]sigkarpenter.NodePool, []awskarpenter.EC2NodeClass, error) {
+	nodeGroups, err := getNodegroups(opts)
+	if err != nil {
+		return nil, nil, aws.FormatErrorAsMessageOnly(err)
+	}
 
-	for _, ng := range *nodeGroups {
+	if len(nodeGroups) == 0 {
+		return nil, nil, fmt.Errorf("no nodegroups found")
+	}
+
+	npMap := map[string]*sigkarpenter.NodePool{}
+	ncMap := map[string]*awskarpenter.EC2NodeClass{}
+	mergedNcMap := map[string]string{}
+
+	for _, ng := range nodeGroups {
 		nodegroup, err := NewNodeGroup(ng)
 		if err != nil {
 			return nil, nil, err
@@ -28,15 +44,25 @@ func Generate(nodeGroups *[]ekstypes.Nodegroup) ([]sigkarpenter.NodePool, []awsk
 		if err != nil {
 			return nil, nil, err
 		}
-		nodeClasses = append(nodeClasses, ec2Class)
+
+		mergeNC(ec2Class, ncMap, &mergedNcMap)
 
 		nodePool, err := nodegroup.GetNodePool()
 		if err != nil {
 			return nil, nil, err
 		}
-		nodePools = append(nodePools, nodePool)
+
+		// Merge similar nodepools
+		mergeNP(nodePool, npMap, mergedNcMap)
 	}
 
+	nodePools := lo.MapToSlice(npMap, func(_ string, v *sigkarpenter.NodePool) sigkarpenter.NodePool {
+		return *v
+	})
+
+	nodeClasses := lo.MapToSlice(ncMap, func(_ string, v *awskarpenter.EC2NodeClass) awskarpenter.EC2NodeClass {
+		return *v
+	})
 	return nodePools, nodeClasses, nil
 }
 
@@ -63,4 +89,100 @@ func NewNodeGroup(ng ekstypes.Nodegroup) (*NodeGroup, error) {
 	}
 
 	return &newNodegroup, nil
+}
+
+func getNodegroups(opts *options.Options) ([]ekstypes.Nodegroup, error) {
+	var nodegroups []ekstypes.Nodegroup
+	var ngList []string
+	var err error
+
+	eksClient := aws.NewEKSClient()
+
+	if opts.NodegroupName != "" {
+		ngList = []string{opts.NodegroupName}
+	} else {
+		ngList, err = eksClient.ListNodegroups(opts.ClusterName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, ng := range ngList {
+		if opts.KarpenterNodegroupName != ng {
+			nodegroup, err := eksClient.DescribeNodegroup(opts.ClusterName, ng)
+			if err != nil {
+				return nil, err
+			}
+
+			if nodegroup.Status != ekstypes.NodegroupStatusActive {
+				return nil, fmt.Errorf(`nodegroup "%s" is not active, make sure all the nodegroups are in "ACTIVE" state`, ng)
+			}
+			nodegroups = append(nodegroups, *nodegroup)
+		}
+	}
+	return nodegroups, nil
+}
+
+func mergeNP(newNP sigkarpenter.NodePool, npMap map[string]*sigkarpenter.NodePool, mergedNCMap map[string]string) {
+	modifiedNP := newNP.DeepCopy()
+	modifiedNPReqs := modifiedNP.Spec.Template.Spec.Requirements
+
+	// Remove instance from Nodepool to check equality
+	for idx, req := range modifiedNPReqs {
+		if req.Key == "node.kubernetes.io/instance-type" {
+			modifiedNP.Spec.Template.Spec.Requirements = append(modifiedNPReqs[:idx], modifiedNPReqs[idx+1:]...)
+		}
+	}
+
+	if val, ok := mergedNCMap[modifiedNP.Spec.Template.Spec.NodeClassRef.Name]; ok {
+		modifiedNP.Spec.Template.Spec.NodeClassRef.Name = val
+	}
+
+	npHash := modifiedNP.Hash()
+	// Add Nodepool to map if nodepool does not exists
+	if np, exists := (npMap)[npHash]; !exists {
+		(npMap)[npHash] = &newNP
+	} else {
+		// Modify Nodepool if nodepool exists
+		if val, ok := np.Annotations["migrate.karpenter.sh/merged-nodepools"]; !ok {
+			np.Annotations["migrate.karpenter.sh/merged-nodepools"] = modifiedNP.Annotations["migrate.karpenter.sh/source-nodegroup"]
+		} else {
+			np.Annotations["migrate.karpenter.sh/merged-nodepools"] = fmt.Sprintf("%s,%s", val, modifiedNP.Annotations["migrate.karpenter.sh/source-nodegroup"])
+		}
+
+		// Append Instance Types to existing Nodepool Instance Types
+		for idx, req := range np.Spec.Template.Spec.Requirements {
+			if req.Key == "node.kubernetes.io/instance-type" {
+				for _, reqNew := range newNP.Spec.Template.Spec.Requirements {
+					if reqNew.Key == "node.kubernetes.io/instance-type" {
+						newVals := append(req.Values, reqNew.Values...)
+						np.Spec.Template.Spec.Requirements[idx].Values = lo.Uniq(newVals)
+					}
+				}
+			}
+		}
+	}
+}
+
+func mergeNC(newNC awskarpenter.EC2NodeClass, ncMap map[string]*awskarpenter.EC2NodeClass, mergedNCMap *map[string]string) {
+
+	// Merge similar nodeClasses
+	ncHash := newNC.Hash()
+	if nc, exists := ncMap[ncHash]; !exists {
+		ncMap[ncHash] = &newNC
+	} else {
+		// Create record of merged nodeclasses
+		(*mergedNCMap)[newNC.Name] = nc.Name
+
+		if val, ok := nc.Annotations["migrate.karpenter.sh/merged-nodeclasses"]; !ok {
+			nc.Annotations["migrate.karpenter.sh/merged-nodeclasses"] = newNC.Annotations["migrate.karpenter.sh/source-nodegroup"]
+		} else {
+			nc.Annotations["migrate.karpenter.sh/merged-nodeclasses"] = fmt.Sprintf("%s,%s", val, newNC.Annotations["migrate.karpenter.sh/source-nodegroup"])
+		}
+	}
+}
+
+func tagLabeltoOmmit(key string) bool {
+	tagLabelRegex := regexp.MustCompile(TagLabelPattern)
+	return tagLabelRegex.MatchString(key)
 }

@@ -22,20 +22,13 @@ func TestNodeGroup_NodePoolObjectMeta(t *testing.T) {
 			n: NodeGroup{
 				Nodegroup: &ekstypes.Nodegroup{
 					NodegroupName: lo.ToPtr("my-node-group"),
-					ScalingConfig: &ekstypes.NodegroupScalingConfig{
-						MinSize:     lo.ToPtr(int32(1)),
-						MaxSize:     lo.ToPtr(int32(10)),
-						DesiredSize: lo.ToPtr(int32(5)),
-					},
 				},
 			},
 			expected: metav1.ObjectMeta{
 				Name: "my-node-group",
 				Annotations: map[string]string{
-					"generated-by":                 "karpenter-migrate",
-					"migrate.karpenter.io/min":     "1",
-					"migrate.karpenter.io/max":     "10",
-					"migrate.karpenter.io/desired": "5",
+					"generated-by":                          "karpenter-migrate",
+					"migrate.karpenter.sh/source-nodegroup": "my-node-group",
 				},
 			},
 		},
@@ -52,6 +45,8 @@ func TestNodeGroup_NodePoolObjectMeta(t *testing.T) {
 }
 
 func TestNodeGroup_NodeClaimObjectMeta(t *testing.T) {
+	noLabels := map[string]string{}
+
 	tests := []struct {
 		name     string
 		n        NodeGroup
@@ -81,7 +76,9 @@ func TestNodeGroup_NodeClaimObjectMeta(t *testing.T) {
 					Labels: nil,
 				},
 			},
-			expected: sigkarpenter.ObjectMeta{},
+			expected: sigkarpenter.ObjectMeta{
+				Labels: noLabels,
+			},
 		},
 	}
 
